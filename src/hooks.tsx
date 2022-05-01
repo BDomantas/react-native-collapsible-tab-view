@@ -259,7 +259,7 @@ export const useScrollHandlerY = (name: TabName) => {
     contentHeights,
     indexDecimal,
     allowHeaderOverscroll,
-    isSlidingHeader,
+    isSlidingTopContainer,
   } = useTabsContext()
 
   const enabled = useSharedValue(false)
@@ -357,7 +357,7 @@ export const useScrollHandlerY = (name: TabName) => {
   const scrollHandler = useAnimatedScrollHandler(
     {
       onScroll: (event) => {
-        if (!enabled.value || isSlidingHeader.value) return
+        if (!enabled.value || isSlidingTopContainer.value) return
 
         if (focusedTab.value === name) {
           if (IS_IOS) {
