@@ -124,7 +124,7 @@ export const Container = React.memo(
       const oldAccScrollY: ContextType['oldAccScrollY'] = useSharedValue(0)
       const accDiffClamp: ContextType['accDiffClamp'] = useSharedValue(0)
       const isScrolling: ContextType['isScrolling'] = useSharedValue(0)
-      const isSlidingTopContainer = useSharedValue(false)
+      const isSlidingHeader = useSharedValue(false)
       const scrollYCurrent: ContextType['scrollYCurrent'] = useSharedValue(0)
       const scrollY: ContextType['scrollY'] = useSharedValue(
         tabNamesArray.map(() => 0)
@@ -255,10 +255,34 @@ export const Container = React.memo(
         }
       )
 
+      useAnimatedReaction(
+        () => scrollYCurrent.value - contentInset.value,
+        (nextPosition, previousPosition) => {
+          if (nextPosition !== previousPosition && isSlidingHeader.value) {
+            scrollToImpl(
+              refMap[tabNames.value[index.value]],
+              0,
+              scrollYCurrent.value - contentInset.value,
+              false
+            )
+          }
+        }
+      )
+
       const headerTranslateY = useDerivedValue(() => {
         return revealHeaderOnScroll
           ? -accDiffClamp.value
           : -Math.min(scrollYCurrent.value, headerScrollDistance.value)
+      }, [revealHeaderOnScroll])
+
+      const stylez = useAnimatedStyle(() => {
+        return {
+          transform: [
+            {
+              translateY: headerTranslateY.value,
+            },
+          ],
+        }
       }, [revealHeaderOnScroll])
 
       const onLayout = React.useCallback(
@@ -352,7 +376,7 @@ export const Container = React.memo(
             headerTranslateY,
             width,
             allowHeaderOverscroll,
-            isSlidingTopContainer,
+            isSlidingHeader,
           }}
         >
           <Animated.View
@@ -360,7 +384,14 @@ export const Container = React.memo(
             onLayout={onLayout}
             pointerEvents="box-none"
           >
-            <TopContainer>
+            <Animated.View
+              pointerEvents="box-none"
+              style={[
+                styles.topContainer,
+                headerContainerStyle,
+                !cancelTranslation && stylez,
+              ]}
+            >
               <HeaderContainer
                 containerRef={containerRef}
                 onTabPress={onTabPress}
@@ -377,7 +408,7 @@ export const Container = React.memo(
                 width={width}
                 renderTabBar={renderTabBar}
               />
-            </TopContainer>
+            </Animated.View>
 
 
             <AnimatedPagerView
@@ -420,5 +451,19 @@ export const Container = React.memo(
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  topContainer: {
+    position: 'absolute',
+    zIndex: 100,
+    width: '100%',
+    backgroundColor: 'white',
+    shadowColor: '#000000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.23,
+    shadowRadius: 2.62,
+    elevation: 4,
   },
 })
