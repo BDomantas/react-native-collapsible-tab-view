@@ -360,10 +360,7 @@ export const Container = React.memo(
             onLayout={onLayout}
             pointerEvents="box-none"
           >
-            <TopContainer
-              cancelTranslation={cancelTranslation}
-              headerContainerStyle={headerContainerStyle}
-            >
+            <TopContainer>
               <HeaderContainer
                 containerRef={containerRef}
                 onTabPress={onTabPress}
