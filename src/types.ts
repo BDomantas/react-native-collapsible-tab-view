@@ -197,6 +197,14 @@ export type ContextType<T extends TabName = TabName> = {
 
   /**
    * The next snapping value.
+   * Scroll x position of the tabs container.
+   */
+  scrollX: Animated.SharedValue<number>
+  isGliding: Animated.SharedValue<boolean>
+  isSlidingHeader: Animated.SharedValue<boolean>
+  isSnapping: Animated.SharedValue<boolean>
+  /**
+   * The next snapping value, used only with diffClamp.
    */
   snappingTo: Animated.SharedValue<number>
 
