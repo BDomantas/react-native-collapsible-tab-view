@@ -11,11 +11,10 @@ import Animated, {
   useAnimatedGestureHandler,
   withDecay,
   useAnimatedReaction,
-  useSharedValue,
 } from 'react-native-reanimated'
 
-import { IS_IOS, scrollToImpl } from './helpers'
-import { useOnScroll, useSnap, useTabsContext } from './hooks'
+import { scrollToImpl } from './helpers'
+import { useTabsContext } from './hooks'
 import { CollapsibleProps } from './types'
 
 type TabBarContainerProps = Pick<
@@ -33,18 +32,12 @@ export const TopContainer: React.FC<TabBarContainerProps> = ({
     revealHeaderOnScroll,
     isSlidingTopContainer,
     scrollYCurrent,
+    headerHeight,
     contentInset,
     refMap,
     tabNames,
     index,
-    headerScrollDistance,
   } = useTabsContext()
-
-  const isSlidingTopContainerPrev = useSharedValue(false)
-  const isTopContainerOutOfSync = useSharedValue(false)
-
-  const tryToSnap = useSnap()
-  const onScroll = useOnScroll()
 
   const animatedStyles = useAnimatedStyle(() => {
     return {
@@ -56,12 +49,6 @@ export const TopContainer: React.FC<TabBarContainerProps> = ({
     }
   }, [revealHeaderOnScroll])
 
-  const syncActiveTabScroll = (position: number) => {
-    'worklet'
-
-    scrollToImpl(refMap[tabNames.value[index.value]], 0, position, false)
-  }
-
   const gestureHandler = useAnimatedGestureHandler<
     PanGestureHandlerGestureEvent,
     { startY: number }
@@ -70,66 +57,44 @@ export const TopContainer: React.FC<TabBarContainerProps> = ({
       if (!isSlidingTopContainer.value) {
         ctx.startY = scrollYCurrent.value
         isSlidingTopContainer.value = true
+
         return
       }
 
       scrollYCurrent.value = interpolate(
         -event.translationY + ctx.startY,
-        [0, headerScrollDistance.value],
-        [0, headerScrollDistance.value],
+        [0, headerHeight.value!],
+        [0, headerHeight.value!],
         Extrapolate.CLAMP
       )
     },
-    onEnd: (event, ctx) => {
+    onEnd: (evt, ctx) => {
       if (!isSlidingTopContainer.value) return
 
       ctx.startY = 0
       scrollYCurrent.value = withDecay(
         {
-          velocity: -event.velocityY,
-          clamp: [0, headerScrollDistance.value],
-          deceleration: IS_IOS ? 0.998 : 0.99,
+          velocity: -evt.velocityY,
+          clamp: [0, headerHeight.value!],
         },
-        (finished) => {
+        () => {
           isSlidingTopContainer.value = false
-          isTopContainerOutOfSync.value = finished
         }
       )
     },
   })
 
-  //Keeps updating the active tab scroll as we scroll on the top container element
   useAnimatedReaction(
     () => scrollYCurrent.value - contentInset.value,
     (nextPosition, previousPosition) => {
       if (nextPosition !== previousPosition && isSlidingTopContainer.value) {
-        syncActiveTabScroll(nextPosition)
-        onScroll()
+        scrollToImpl(
+          refMap[tabNames.value[index.value]],
+          0,
+          scrollYCurrent.value - contentInset.value,
+          false
+        )
       }
-    }
-  )
-
-  /* Syncs the scroll of the active tab once we complete the scroll gesture 
-  on the header and the decay animation completes with success
-   */
-  useAnimatedReaction(
-    () => {
-      return (
-        isSlidingTopContainer.value !== isSlidingTopContainerPrev.value &&
-        isTopContainerOutOfSync.value
-      )
-    },
-    (result) => {
-      isSlidingTopContainerPrev.value = isSlidingTopContainer.value
-
-      if (!result) return
-      if (isSlidingTopContainer.value === true) return
-
-      syncActiveTabScroll(scrollYCurrent.value - contentInset.value)
-      onScroll()
-      tryToSnap()
-
-      isTopContainerOutOfSync.value = false
     }
   )
 
