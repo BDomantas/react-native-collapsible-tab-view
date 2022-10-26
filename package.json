@@ -19,7 +19,7 @@
     "bootstrap": "yarn example && yarn",
     "prepack": "bob build && rm -rf node_modules",
     "docs": "ts-node ./documentation/buildDocs.ts",
-    "prepare": "bob build"
+    "prepare": "bob build && rm -rf node_modules"
   },
   "publishConfig": {
     "registry": "https://registry.npmjs.org/"
